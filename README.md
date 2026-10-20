@@ -74,7 +74,21 @@ The UI sends the complete conversation and supports ten user turns before asking
 
 All palette colors live in `frontend/src/index.css`; brand and small labels use JetBrains Mono, body text uses Inter via Google Fonts, and the welcome heading adds a Georgia serif accent. Tailwind is available alongside component styles. The streaming logic is isolated in `src/hooks/useChat.js`.
 
-`DEBUG` defaults to false; `.env.example` enables it for local development. For a deployment, set `DEBUG=False`, a stable random `DJANGO_SECRET_KEY`, and appropriate `ALLOWED_HOSTS`; configure your frontend origin in Django's `CORS_ALLOWED_ORIGINS`. Serve behind HTTPS with a production WSGI server, disable proxy buffering for SSE, and allow enough worker capacity for long-lived streams. Django's development server is for local use. Before exposing a shared API publicly, add authentication and per-user request quotas at your application or gateway to protect your Groq allowance. This starter has no accounts or persistent conversation storage.
+`DEBUG` defaults to false; `.env.example` enables it for local development. For a deployment, set `DEBUG=False`, a stable random `SECRET_KEY`, and appropriate `ALLOWED_HOSTS`; configure your frontend origin in Django's `CORS_ALLOWED_ORIGINS`. Serve behind HTTPS with a production WSGI server, disable proxy buffering for SSE, and allow enough worker capacity for long-lived streams. Django's development server is for local use. Before exposing a shared API publicly, add authentication and per-user request quotas at your application or gateway to protect your Groq allowance. This starter has no accounts or persistent conversation storage.
+
+## Deployment
+
+For a Render **Web Service**, connect this repository and select the **Python** runtime, **Free** instance, and root directory `backend`. Set:
+
+- **Build command:** `pip install -r requirements.txt`
+- **Start command:** `gunicorn config.wsgi:application --workers 1 --threads 4 --timeout 120`
+- **Environment variables:** `DEBUG=False`, a generated private `SECRET_KEY`, your `GROQ_API_KEY`, `ALLOWED_HOSTS=your-service.onrender.com`, and `CORS_ALLOWED_ORIGINS=https://your-frontend.example.com` (replace both hostnames). Hosts have no URL scheme; CORS origins include the scheme and no trailing slash. Multiple values are comma-separated.
+
+Render supplies `PORT`; Gunicorn binds to `0.0.0.0:$PORT` automatically. Four threads allow concurrent SSE connections; keep response buffering disabled on any additional proxy. The existing SSE response headers and chatbot logic are unchanged. No migrations or static collection are needed for this stateless API. Do not configure `/` as a custom health check because it has no route; leave Render's default port health check.
+
+Deploy the frontend separately with `VITE_API_URL=https://your-service.onrender.com` and rebuild it. Keep `.env` private; Render dashboard values take precedence over local dotenv settings. Production startup intentionally fails if `SECRET_KEY` is missing. For local development, `DEBUG=True` permits a development-only fallback.
+
+Render's free service spins down after 15 minutes without inbound traffic; waking it can take about a minute, so the first chat request may need a retry. See [Render's Django deployment guide](https://render.com/docs/deploy-django), [free service limits](https://render.com/docs/free), and [Gunicorn bind behavior](https://gunicorn.org/reference/settings/#bind).
 
 ## Screenshots
 
@@ -93,6 +107,7 @@ backend/
   config/
     __init__.py
     settings.py
+    tests.py
     urls.py
     wsgi.py
     asgi.py
