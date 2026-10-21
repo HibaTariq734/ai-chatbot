@@ -1,6 +1,12 @@
 # Grove AI
 
 A focused, responsive AI chat workspace built with Django and React. Sage green, walnut brown, and a subtle amber glow create a calm workspace with responsive suggestion cards, tactile controls, and comfortable reading.
+**Live demo:** https://grove-ai-app-lyart.vercel.app
+
+## Screenshots
+
+![Home](home.png)
+![Chat](chat.png)
 
 ## Features
 
