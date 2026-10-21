@@ -3,4 +3,3 @@ djangorestframework>=3.16,<4
 django-cors-headers>=4.7,<5
 python-dotenv>=1.1,<2
 groq>=0.30,<2
-gunicorn>=23,<24

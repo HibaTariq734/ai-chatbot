@@ -23,7 +23,7 @@ class DeploymentSettingsTests(TestCase):
         settings = self.load_settings({'DEBUG': ' True '})
         self.assertTrue(settings['DEBUG'])
         self.assertTrue(settings['SECRET_KEY'])
-        self.assertEqual(settings['ALLOWED_HOSTS'], ['localhost', '127.0.0.1'])
+        self.assertEqual(settings['ALLOWED_HOSTS'], ['localhost', '127.0.0.1', '.vercel.app'])
         self.assertEqual(settings['CORS_ALLOWED_ORIGINS'], [
             'http://localhost:5173', 'http://127.0.0.1:5173',
         ])
@@ -40,3 +40,14 @@ class DeploymentSettingsTests(TestCase):
         self.assertEqual(settings['CORS_ALLOWED_ORIGINS'], [
             'https://app.example.com', 'http://localhost:5173',
         ])
+
+    def test_serverless_settings_disable_database_access(self):
+        settings = self.load_settings({'DEBUG': 'True'})
+        self.assertEqual(settings['DATABASES']['default']['ENGINE'], 'django.db.backends.dummy')
+        self.assertNotIn('django.contrib.auth', settings['INSTALLED_APPS'])
+        self.assertNotIn('django.contrib.sessions', settings['INSTALLED_APPS'])
+
+    def test_vercel_exposes_the_wsgi_application(self):
+        from config.wsgi import app, application
+        self.assertIs(app, application)
+        self.assertTrue(callable(app))

@@ -76,19 +76,21 @@ All palette colors live in `frontend/src/index.css`; brand and small labels use 
 
 `DEBUG` defaults to false; `.env.example` enables it for local development. For a deployment, set `DEBUG=False`, a stable random `SECRET_KEY`, and appropriate `ALLOWED_HOSTS`; configure your frontend origin in Django's `CORS_ALLOWED_ORIGINS`. Serve behind HTTPS with a production WSGI server, disable proxy buffering for SSE, and allow enough worker capacity for long-lived streams. Django's development server is for local use. Before exposing a shared API publicly, add authentication and per-user request quotas at your application or gateway to protect your Groq allowance. This starter has no accounts or persistent conversation storage.
 
-## Deployment
+## Deploy on Vercel
 
-For a Render **Web Service**, connect this repository and select the **Python** runtime, **Free** instance, and root directory `backend`. Set:
+Import the repository as a Vercel project on the **Hobby** plan. Set **Root Directory** to `backend` and **Framework Preset** to **Other**. Leave Build Command and Output Directory unset: `vercel.json` explicitly uses `@vercel/python` and routes every request to `config/wsgi.py`, which exports `app`. Vercel installs the five packages in `requirements.txt`; no Gunicorn, migrations, or static collection are required.
 
-- **Build command:** `pip install -r requirements.txt`
-- **Start command:** `gunicorn config.wsgi:application --workers 1 --threads 4 --timeout 120`
-- **Environment variables:** `DEBUG=False`, a generated private `SECRET_KEY`, your `GROQ_API_KEY`, `ALLOWED_HOSTS=your-service.onrender.com`, and `CORS_ALLOWED_ORIGINS=https://your-frontend.example.com` (replace both hostnames). Hosts have no URL scheme; CORS origins include the scheme and no trailing slash. Multiple values are comma-separated.
+Set these environment variables in Vercel before deploying:
 
-Render supplies `PORT`; Gunicorn binds to `0.0.0.0:$PORT` automatically. Four threads allow concurrent SSE connections; keep response buffering disabled on any additional proxy. The existing SSE response headers and chatbot logic are unchanged. No migrations or static collection are needed for this stateless API. Do not configure `/` as a custom health check because it has no route; leave Render's default port health check.
+- `DEBUG=False`
+- `SECRET_KEY`: a generated private random secret
+- `GROQ_API_KEY`: your private Groq API key
+- `ALLOWED_HOSTS=your-backend.vercel.app` (or `.vercel.app` for Vercel subdomains; comma-separated)
+- `CORS_ALLOWED_ORIGINS=https://your-frontend.vercel.app` (exact frontend origins, comma-separated, with no trailing slash)
 
-Deploy the frontend separately with `VITE_API_URL=https://your-service.onrender.com` and rebuild it. Keep `.env` private; Render dashboard values take precedence over local dotenv settings. Production startup intentionally fails if `SECRET_KEY` is missing. For local development, `DEBUG=True` permits a development-only fallback.
+Deploy the frontend separately with `VITE_API_URL=https://your-backend.vercel.app` and rebuild it. The API remains `/api/chat/`; `/` has no page. The backend disables database access and needs no SQLite file. Local `.env` files are excluded from CLI uploads by `.vercelignore`; store deployed secrets in Vercel settings.
 
-Render's free service spins down after 15 minutes without inbound traffic; waking it can take about a minute, so the first chat request may need a retry. See [Render's Django deployment guide](https://render.com/docs/deploy-django), [free service limits](https://render.com/docs/free), and [Gunicorn bind behavior](https://gunicorn.org/reference/settings/#bind).
+The Python runtime supports streaming, but responses must complete within the function duration allowed by your Hobby project's configuration. See the [Python runtime](https://vercel.com/docs/functions/runtimes/python) and [function limits](https://vercel.com/docs/functions/limitations). This configuration preserves the existing SSE logic; verify token streaming with a live request after deployment.
 
 ## Screenshots
 
@@ -103,6 +105,8 @@ backend/
   .env.example
   .gitignore
   requirements.txt
+  vercel.json
+  .vercelignore
   manage.py
   config/
     __init__.py

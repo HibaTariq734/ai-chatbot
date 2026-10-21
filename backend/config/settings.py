@@ -21,8 +21,9 @@ def env_list(name, default):
     return [value.strip() for value in os.getenv(name, default).split(',') if value.strip()]
 
 
-ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
-INSTALLED_APPS = ['django.contrib.contenttypes', 'django.contrib.auth', 'rest_framework', 'corsheaders', 'chat']
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1,.vercel.app')
+# This stateless API uses neither Django authentication nor database-backed sessions.
+INSTALLED_APPS = ['rest_framework', 'corsheaders', 'chat']
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -32,7 +33,9 @@ MIDDLEWARE = [
 ]
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
-DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
+# Serverless filesystems cannot hold a persistent SQLite database. Explicitly
+# disable database access: accidental ORM use fails instead of writing a file.
+DATABASES = {'default': {'ENGINE': 'django.db.backends.dummy'}}
 # Browsers treat localhost and 127.0.0.1 as different origins, even on this PC.
 CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
